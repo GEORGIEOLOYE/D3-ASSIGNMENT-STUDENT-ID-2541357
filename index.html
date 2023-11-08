@@ -1,0 +1,202 @@
+<!---REFERENCES: 1) https://bost.ocks.org/mike/map/
+2) https://github.com/ONSvisual/topojson_boundaries/blob/master/geogALL2022UK.json-->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>POPULATION MAP OF THE UNITED KINGDOM</title>
+    <style>
+        body {
+            padding: 0;
+            margin: 0;
+
+        }
+
+        .header {
+            text-align: center;
+            font-size: 1.5pt;
+            font-family: "Cambria Math", Times New Roman, Arial, sans-serif;
+            color: #4542f5;
+            top: 120px;
+
+            .h1 {
+                top: 4px;
+                left: 3px;
+                position: absolute;
+
+            }
+
+        }
+
+        .subunit.NIR {
+            fill: #6ff542;
+        }
+
+        .subunit.ENG {
+            fill: #f57e42;
+        }
+
+        .subunit.IRL {
+            fill: #42ecf5;
+        }
+
+        .subunit.SCT {
+            fill: #ec42f5;
+        }
+
+        .subunit.WLS {
+            fill: #4248f5;
+        }
+
+        .subunit text {
+            text-anchor: middle;
+            font-size: 14px;
+            font-weight: 210;
+            fill: #ecf542;
+            fill-opacity: 1.2;
+        }
+
+        .place,
+        .place-label {
+            fill: #444;
+        }
+
+        text {
+            font-family: "Cambria Math", Times New Roman, Arial, sans-serif;
+            pointer-events: none;
+            font-size: 11px;
+        }
+
+        .d3-tip {
+            padding: 11px;
+            background: rgba(0, 0, 0, 0.8);
+            color: green;
+            border-radius: 10px;
+            line-height: 1;
+            font-weight: bolder;
+        }
+
+        .hover {
+            fill: rgb(206, 206, 63);
+        }
+
+        h2 {
+            margin-top: -200;
+            font-size: 1.3em;
+
+        }
+
+        h4 {
+            margin-top: -500;
+            font-size: 1.4em;
+            }
+
+
+        svg {
+            margin-top: 0
+            }
+    </style>
+</head>
+
+<body>
+    <div>
+        <h1>INTERACTIVE POPULATION MAP OF THE UNITED KINGDOM</h1>
+        <button id="reloadData" onclick="plotNewTowns()">Plot New Towns</button>
+    </div>
+
+    <script src="d3.v3.js" charset="utf-8"></script>
+    <script src="topojson.js"></script>
+    <script src="d3-tip.js"></script>
+
+    <script>
+
+
+        var height = 750,
+            width = 920;
+
+        var projection = d3.geo.albers()
+            .center([0, 55.4])
+            .rotate([4.4, 0])
+            .parallels([50, 60])
+            .scale(1200 * 3)
+            .translate([width / 2, height / 2]);
+
+        var path = d3.geo.path()
+            .projection(projection);
+
+        var svg = d3.select("body").append("svg")
+            .attr("width", width)
+            .attr("height", height);
+
+        var tip = d3.tip()
+            .attr('class', 'd3-tip')
+            .offset([-20, 0])
+            .html(function (d) {
+                return d.Town + ", " + d.County + "<p><strong>Population:<\/strong> <span style='color:green'>" + d.Population + "<\/span>";
+            });
+
+        svg.call(tip);
+
+        d3.json("uk.json", function (error, uk) {
+            svg.selectAll(".subunit")
+                .data(topojson.feature(uk, uk.objects.subunits).features)
+                .enter().append("path")
+                .attr("class", function (d) { return "subunit " + d.id; })
+                .attr("d", path);
+        });
+
+        var datasource1 = "http://34.38.72.236/Circles/Towns/";
+        var t_towncount = "number";
+
+        while (isNaN(t_towncount)) {
+            t_towncount = window.prompt("Please enter the number of towns", t_towncount);
+        }
+
+        if (isNaN(t_towncount)) {
+            t_towncount = "50";
+        }
+
+        if (parseInt(t_towncount) > 500) {
+            t_towncount = "500";
+        }
+
+        var datasource = datasource1.concat(String(parseInt(t_towncount)));
+
+        d3.json(datasource, function (error, twn) {
+            svg.selectAll("circle")
+                .data(twn)
+                .enter()
+                .append("circle")
+                .attr("cx", function (d) {
+                    return projection([d.lng, d.lat])[0];
+                })
+                .attr("cy", function (d) {
+                    return projection([d.lng, d.lat])[1];
+                })
+                .on('mouseover', tip.show)
+                .on('mouseout', tip.hide)
+                .attr("class", "incident")
+                .attr("r", 5);
+
+            svg.selectAll(".place-label")
+                .data(twn)
+                .enter().append("text")
+                .attr("class", "place-label")
+                .attr("transform", function (d) { return "translate(" + projection([d.lng, d.lat]) + ")"; })
+                .attr("x", function (d) { return d.lng > -1 ? 6 : -6; })
+                .attr("dy", ".35em")
+                .style("text-anchor", function (d) { return d.lng > -1 ? "start" : "end"; });
+
+        });
+
+        function plotNewTowns() {
+            location.reload();
+        }
+
+
+    </script>
+</body>
+
+</html>
